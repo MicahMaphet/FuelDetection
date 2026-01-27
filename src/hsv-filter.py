@@ -28,3 +28,6 @@ while True:
     key = cv2.waitKey(30)
     if key == ord('q') or key == 27:
         break
+
+video.stop()
+cv2.destroyAllWindows()
