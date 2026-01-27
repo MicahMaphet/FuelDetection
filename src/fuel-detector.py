@@ -1,3 +1,5 @@
+import os
+import subprocess
 import cv2
 import imutils
 import time
@@ -5,19 +7,23 @@ import time
 lower = (10, 100, 50)
 upper = (60, 220, 225)
 
-video = cv2.VideoCapture("../videos/sim_balls.webm")
+video = cv2.VideoCapture("../videos/sim_balls.mp4")
+fps = video.get(cv2.CAP_PROP_FPS)
+shape = (int(video.get(cv2.CAP_PROP_FRAME_WIDTH)), int(video.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+tmp_file = "/tmp/corrupted_fuel_video.mp4"
+writer = cv2.VideoWriter(tmp_file, fourcc, fps, shape)
 
 time.sleep(1.0)
 
 while True:
-    frame = video.read()
+    ret, frame = video.read()
 
-    frame = frame[1]
+    frame = frame
 
-    if frame is None:
+    if not ret or frame is None:
         break
 
-    frame = imutils.resize(frame, width=600)
     blurred = cv2.GaussianBlur(frame, (11, 11), 0)
     hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
 
@@ -40,6 +46,7 @@ while True:
             cv2.circle(frame, center, 5, (0, 0, 255), -1)
 
 
+    writer.write(frame)
     cv2.imshow("Video", frame)
     cv2.imshow("Detection", mask)
 
@@ -49,3 +56,8 @@ while True:
         break
 
 cv2.destroyAllWindows()
+video.release()
+writer.release()
+
+subprocess.run(["ffmpeg", "-i", tmp_file, "output.mp4"])
+os.remove(tmp_file)
