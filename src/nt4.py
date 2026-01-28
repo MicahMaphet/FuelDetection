@@ -8,6 +8,7 @@ if result is not None and result.ok:
 ws = websocket.WebSocketApp("ws://127.0.0.1:5810/nt/micahvision")
 
 def on_message(ws, message):
+    print(10 * "*" + "Message" + 10 * "*")
     print(message)
 ws.on_message = on_message
 
@@ -21,20 +22,25 @@ def on_reconnect(ws):
     print("Reconnected")
 ws.on_reconnect = on_reconnect
 
-ws.run_forever(reconnect=2)
+def on_open(ws):
+    print("Open")
+    ws.send('''[
+        {
+            "method": "subscribe",
+            "params": {
+                "topics": [""],
+                "subuid": 94608538,
+                "options": {
+                    "periodic": 0.1,
+                    "all": false,
+                    "topicsOnly": true,
+                    "prefix": true
+                }
+            }
+        }
+    ]''')
 
-# res = ws.send('''[
-#     {
-#         method: "subscribe",
-#         params: {
-#             topics: ["AdvantageKit"],
-#             subuid: 94608538,
-#             options: {
-#                 periodic: 0.1,
-#                 all: false,
-#                 topicsOnly: false,
-#                 prefix: false
-#             }
-#         }
-#     }
-# ]''')
+ws.on_open = on_open
+
+
+ws.run_forever(reconnect=2)
