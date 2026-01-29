@@ -42,24 +42,45 @@ ws.on_reconnect = on_reconnect
 
 def on_open(ws):
     print("Open")
-    ws.send('''[
-        {
-            "method": "subscribe",
-            "params": {
-                "topics": ["/AdvantageKit/DriverStation/Autonomous"],
-                "subuid": 94608538,
-                "options": {
-                    "periodic": 0.02,
-                    "all": false,
-                    "topicsOnly": false,
-                    "prefix": true
-                }
-            }
-        }
-    ]''')
+    subscribe("/AdvantageKit/DriverStation/Enabled")
 
 ws.on_open = on_open
 
+class MessageOptions:
+    periodic: float = 0.02
+    all: bool = True
+    topicsOnly: bool = False
+    prefix: bool = True
+
+class MessageParams:
+    topics: list
+    subuid: int
+    options: MessageOptions
+
+def subscribe(topic: str):
+    s = MessageParams()
+    s.topics = [topic]
+    s.subuid = 87687907
+    s.options = MessageOptions()
+    sendJson("subscribe", s)
+
+def sendJson(method: str, params: MessageParams):
+    payload = f'''[
+        {{
+            "method": "{method}",
+            "params": {{
+                "topics": {params.topics},
+                "subuid": {params.subuid},
+                "options": {{
+                    "periodic": {params.options.periodic},
+                    "all": {str(params.options.all).lower()},
+                    "topicsOnly": {str(params.options.topicsOnly).lower()},
+                    "prefix": {str(params.options.prefix).lower()}
+                }}
+            }}
+        }}
+    ]'''.replace("'", "\"")
+    ws.send(payload)
 
 ws.run_forever(reconnect=2)
 
