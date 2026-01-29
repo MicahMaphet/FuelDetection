@@ -21,6 +21,14 @@ f'''{{
     "id": {self.id},
     "value": {self.value}
 }}'''
+    def toPubString(self):
+        return \
+f'''{{
+    "name": "{self.name}",
+    "type": "int",
+    "pubuid": {self.id},
+    "properties": {{}}
+}}'''
 
 class SubscriptionOptions:
     periodic: float = 0.02
@@ -88,6 +96,7 @@ ws.on_reconnect = on_reconnect
 def on_open(ws):
     print("Open")
     subscribe("/AdvantageKit/DriverStation")
+    publish("/MicahVision/val")
 ws.on_open = on_open
 
 def subscribe(topic: str):
@@ -96,6 +105,12 @@ def subscribe(topic: str):
     sub.uid = getNewUid()
     sub.options = SubscriptionOptions()
     sendJson("subscribe", sub.toString())
+
+def publish(topic: str):
+    newTopic = Topic()
+    newTopic.name = topic
+    newTopic.id = getNewUid()
+    sendJson("publish", newTopic.toPubString())
 
 def sendJson(method: str, params):
     payload = \
