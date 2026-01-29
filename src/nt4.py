@@ -23,7 +23,8 @@ def on_message(ws, message):
             state = util.merge(state, util.path_to_obj(path))
 
     elif type(message) is bytes:
-        print(f"bytes: {type(message)}")
+        print(message)
+        print(util.decode(message))
     else:
         print(type(message))
 
@@ -45,12 +46,12 @@ def on_open(ws):
         {
             "method": "subscribe",
             "params": {
-                "topics": [""],
+                "topics": ["/AdvantageKit/DriverStation/Autonomous"],
                 "subuid": 94608538,
                 "options": {
-                    "periodic": 1,
+                    "periodic": 0.02,
                     "all": false,
-                    "topicsOnly": true,
+                    "topicsOnly": false,
                     "prefix": true
                 }
             }
