@@ -1,3 +1,5 @@
+import json
+import util
 import requests
 import websocket
 
@@ -7,9 +9,24 @@ if result is not None and result.ok:
 
 ws = websocket.WebSocketApp("ws://127.0.0.1:5810/nt/micahvision")
 
+global state
+state: dict = {}
+
 def on_message(ws, message):
+    global state
     print(10 * "*" + "Message" + 10 * "*")
-    print(message)
+    if type(message) is str:
+        data = json.loads(message)
+        for d in data:
+            path: list = d["params"]["name"].split("/")[1:]
+            print(path)
+            state = util.merge(state, util.path_to_obj(path))
+
+    elif type(message) is bytes:
+        print(f"bytes: {type(message)}")
+    else:
+        print(type(message))
+
 ws.on_message = on_message
 
 def on_close(ws, status, message):
@@ -31,7 +48,7 @@ def on_open(ws):
                 "topics": [""],
                 "subuid": 94608538,
                 "options": {
-                    "periodic": 0.1,
+                    "periodic": 1,
                     "all": false,
                     "topicsOnly": true,
                     "prefix": true
@@ -44,3 +61,5 @@ ws.on_open = on_open
 
 
 ws.run_forever(reconnect=2)
+
+print(state)
