@@ -1,4 +1,5 @@
 import msgpack
+import re
 
 def path_to_obj(s: list) -> dict:
     if len(s) == 1:
@@ -15,13 +16,19 @@ def merge(d1: dict, d2: dict):
             result[key] = d2[key]
     return result
 
-def decode(data: bytes) -> list:
-    if len(data) == 15:
-        return msgpack.unpackb(data)
+def decode(data: bytes) -> list[list]:
+    mark = b'\x94\xcd'
+    positions = [match.start() for match in re.finditer(mark, data)]
+
     result = []
-    for x in range(int(len(data) / 21)):
+    for i in range(len(positions)-1):
         try:
-            result.append(msgpack.unpackb(data[x*21:x*21+21]))
+            result.append(msgpack.unpackb(data[positions[i]:positions[i+1]]))
         except:
-            print(f"{x} didn't work")
+            print(f"decoding {data} didn't work")
+    try:
+        result.append(msgpack.unpackb(data[positions[-1]:]))
+    except:
+        print(f"decoding last section of {data} didn't work")
+
     return result

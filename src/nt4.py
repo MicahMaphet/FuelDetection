@@ -1,4 +1,5 @@
 import json
+import random
 import util
 import requests
 import websocket
@@ -9,25 +10,69 @@ if result is not None and result.ok:
 
 ws = websocket.WebSocketApp("ws://127.0.0.1:5810/nt/micahvision")
 
-global state
-state: dict = {}
+class Topic:
+    name: str
+    id: int
+    value = None
+    def toString(self):
+        return \
+f'''{{
+    "name": {self.name},
+    "id": {self.id},
+    "value": {self.value}
+}}'''
+
+class SubscriptionOptions:
+    periodic: float = 0.02
+    all: bool = True
+    topicsOnly: bool = False
+    prefix: bool = True
+    def toString(self):
+        return \
+f'''{{
+    "periodic": {self.periodic},
+    "all": {str(self.all).lower()},
+    "topicsOnly": {str(self.topicsOnly).lower()},
+    "prefix": {str(self.prefix).lower()}
+}}'''
+
+class Subscription:
+    uid: int = -1
+    topics = []
+    options = SubscriptionOptions()
+
+    def toString(self):
+        return \
+f'''{{
+    "topics": {self.topics},
+    "subuid": {self.uid},
+    "options": {self.options.toString()}
+}}'''
+
+global topics
+topics: dict[int, Topic] = {}
 
 def on_message(ws, message):
-    global state
+    global topics
     print(10 * "*" + "Message" + 10 * "*")
     if type(message) is str:
         data = json.loads(message)
         for d in data:
-            path: list = d["params"]["name"].split("/")[1:]
-            print(path)
-            state = util.merge(state, util.path_to_obj(path))
+            params = d["params"]
+            topic = Topic()
+            topic.name = params["name"]
+            topic.id = int(params["id"])
+            topics[topic.id] = topic
+            print(topic.toString())
 
     elif type(message) is bytes:
-        print(message)
-        print(util.decode(message))
+        data = util.decode(message)
+        for d in data:
+            (id, _, _, value) = d
+            topics[id].value = value
+            print(f'{topics[id].name}: {topics[id].value}')
     else:
         print(type(message))
-
 ws.on_message = on_message
 
 def on_close(ws, status, message):
@@ -43,45 +88,27 @@ ws.on_reconnect = on_reconnect
 def on_open(ws):
     print("Open")
     subscribe("/AdvantageKit/DriverStation/Enabled")
-
+    subscribe("/AdvantageKit/DriverStation/Autonomous")
 ws.on_open = on_open
 
-class MessageOptions:
-    periodic: float = 0.02
-    all: bool = True
-    topicsOnly: bool = False
-    prefix: bool = True
-
-class MessageParams:
-    topics: list
-    subuid: int
-    options: MessageOptions
-
 def subscribe(topic: str):
-    s = MessageParams()
-    s.topics = [topic]
-    s.subuid = 87687907
-    s.options = MessageOptions()
-    sendJson("subscribe", s)
+    sub = Subscription()
+    sub.topics = [topic]
+    sub.uid = getNewUid()
+    sub.options = SubscriptionOptions()
+    sendJson("subscribe", sub.toString())
 
-def sendJson(method: str, params: MessageParams):
-    payload = f'''[
-        {{
-            "method": "{method}",
-            "params": {{
-                "topics": {params.topics},
-                "subuid": {params.subuid},
-                "options": {{
-                    "periodic": {params.options.periodic},
-                    "all": {str(params.options.all).lower()},
-                    "topicsOnly": {str(params.options.topicsOnly).lower()},
-                    "prefix": {str(params.options.prefix).lower()}
-                }}
-            }}
-        }}
-    ]'''.replace("'", "\"")
+def sendJson(method: str, params):
+    payload = \
+f'''[{{
+    "method": "{method}",
+    "params": {params}
+}}]'''.replace("'", "\"")
+
+    print(payload)
     ws.send(payload)
 
-ws.run_forever(reconnect=2)
+def getNewUid() -> int:
+    return random.randint(0, 99999999)
 
-print(state)
+ws.run_forever(reconnect=2)
