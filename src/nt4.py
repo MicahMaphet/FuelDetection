@@ -87,8 +87,7 @@ ws.on_reconnect = on_reconnect
 
 def on_open(ws):
     print("Open")
-    subscribe("/AdvantageKit/DriverStation/Enabled")
-    subscribe("/AdvantageKit/DriverStation/Autonomous")
+    subscribe("/AdvantageKit/DriverStation")
 ws.on_open = on_open
 
 def subscribe(topic: str):

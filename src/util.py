@@ -17,7 +17,7 @@ def merge(d1: dict, d2: dict):
     return result
 
 def decode(data: bytes) -> list[list]:
-    mark = b'\x94\xcd'
+    mark = b'\x94'
     positions = [match.start() for match in re.finditer(mark, data)]
 
     result = []
